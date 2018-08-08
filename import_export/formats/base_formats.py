@@ -48,6 +48,12 @@ class Format:
         """
         raise NotImplementedError()
 
+    def export_stream_data(self, dataset, **kwargs):
+        """
+        Returns format representation for given dataset.
+        """
+        raise NotImplementedError()
+
     def is_binary(self):
         """
         Returns if this format is binary.
@@ -133,6 +139,25 @@ class CSV(TextFormat):
     def create_dataset(self, in_stream, **kwargs):
         return super().create_dataset(in_stream, **kwargs)
 
+    def export_stream_data(self, dataset, **kwargs):
+        import csv
+        from io import StringIO
+        from tablib.formats import _csv
+
+        stream = StringIO()
+
+        kwargs.setdefault('delimiter', _csv.DEFAULT_DELIMITER)
+        if not _csv.is_py3:
+            kwargs.setdefault('encoding', _csv.DEFAULT_ENCODING)
+
+        _csv = csv.writer(stream, **kwargs)
+
+        for row in dataset._package(dicts=False):
+            _csv.writerow(row)
+
+        stream.seek(0)
+        return stream
+
 
 class JSON(TextFormat):
     TABLIB_MODULE = 'tablib.formats._json'
@@ -183,6 +208,20 @@ class XLS(TablibFormat):
         for i in range(1, sheet.nrows):
             dataset.append(sheet.row_values(i))
         return dataset
+
+    def export_stream_data(self, dataset, **kwargs):
+        from io import BytesIO
+        import xlwt
+        from tablib.formats._xls import dset_sheet
+        wb = xlwt.Workbook(encoding='utf8')
+        ws = wb.add_sheet(dataset.title if dataset.title else 'Tablib Dataset')
+
+        dset_sheet(dataset, ws)
+
+        stream = BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+        return stream
 
 
 class XLSX(TablibFormat):
