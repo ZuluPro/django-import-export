@@ -8,11 +8,12 @@ from django.utils.translation import gettext_lazy as _
 class ImportForm(forms.Form):
     import_file = forms.FileField(
         label=_('File to import')
-        )
+    )
     input_format = forms.ChoiceField(
         label=_('Format'),
         choices=(),
-        )
+        initial='0',
+    )
 
     def __init__(self, import_formats, *args, **kwargs):
         super().__init__(*args, **kwargs)
