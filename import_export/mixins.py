@@ -45,6 +45,9 @@ class ExportViewMixin:
     def get_export_resource_kwargs(self, request, *args, **kwargs):
         return self.get_resource_kwargs(request, *args, **kwargs)
 
+    def get_export_kwargs(self, file_format, queryset, *args, **kwargs):
+        return {}
+
     def get_export_data(self, file_format, queryset, *args, **kwargs):
         """
         Returns file_format representation for given queryset.
@@ -52,7 +55,11 @@ class ExportViewMixin:
         resource_class = self.get_export_resource_class()
         data = resource_class(**self.get_export_resource_kwargs(self.request))\
             .export(queryset, *args, **kwargs)
-        export_data = file_format.export_stream_data(data)
+        export_kwargs = self.get_export_kwargs(file_format, queryset, *args, **kwargs)
+        if file_format.can_export_stream():
+            export_data = file_format.export_stream_data(data, **export_kwargs)
+        else:
+            export_data = file_format.export_data(data, **export_kwargs)
         return export_data
 
     def get_export_filename(self, file_format):
@@ -68,8 +75,8 @@ class ExportViewMixin:
         return kwargs
 
     def get_http_response_class(self):
-        file_format = self.get_export_format()
-        if issubclass(file_format, base_formats.TextFormat):
+        file_format = self.get_export_format()()
+        if file_format.can_export_stream():
             return http.StreamingHttpResponse
         return http.FileResponse
 

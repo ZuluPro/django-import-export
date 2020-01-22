@@ -2,6 +2,7 @@ from django.db import migrations, models
 
 can_use_postgres_fields = False
 chapters_field = models.Field()  # Dummy field
+data_field = models.Field()  # Dummy field
 
 try:
     from django.contrib.postgres.fields import ArrayField, JSONField
